@@ -1,0 +1,283 @@
+1) The following queries are going to use a new dataset that simulates an E-Commerce application!
+
+	CREATE TABLE users (
+	  id SERIAL PRIMARY KEY,
+	  first_name VARCHAR,
+	  last_name VARCHAR
+	);
+	CREATE TABLE products (
+	  id SERIAL PRIMARY KEY,
+	  name VARCHAR,
+	  department VARCHAR,
+	  price INTEGER,
+	  weight INTEGER
+	);
+	CREATE TABLE orders (
+	  id SERIAL PRIMARY KEY,
+	  user_id INTEGER REFERENCES users(id),
+	  product_id INTEGER REFERENCES products(id),
+	  paid BOOLEAN
+	);
+	 
+  To insert the data into these table, refer to 2_load_new_large_dataset.sql file under Approaching_Database_Design/Joins_and_Aggregation/Aggregations
+	  
+  The relationship between users and products table is a many-to-many relationship. We are modeling that relationship by using the orders table. The relationship between users and orders is a one-to-many. 
+  
+2) Question:
+	Let's get more familiar with the E-Commerce dataset.
+	a) Write a query to print the number of paid and unpaid orders.
+	   The result should look something like this:
+		+-------+-------+
+		| paid  | count |
+		+-------+-------+
+		| true  | 4     |
+		+-------+-------+
+		| false | 2     |
+		+-------+-------+
+		
+			SELECT paid, COUNT(*) 
+			FROM orders
+			GROUP BY paid;
+			
+	b) Print the first_name and last_name of each user, then whether or not they have paid for their order.
+		
+		SELECT first_name, last_name, paid
+		FROM orders
+		JOIN users ON orders.user_id = users.id;
+		
+	c) Fetch all the details of all the products in a sorted order based on the price.
+		SELECT * 
+		FROM products
+		ORDER BY price;        --> to get the products in ascending order of their price. Default is ascending order  
+		
+		OR 
+		
+		SELECT * 
+		FROM products
+		ORDER BY price ASC;   --> to get the products in ascending order of their price 
+		
+		SELECT * 
+		FROM products
+		ORDER BY price DESC;  --> to get the products in descending order of their price 
+		
+	d) Fetch all the details of all the products in a sorted order based on the name. Sorting of records can be done not only with numbers but with Strings.
+		SELECT * 
+		FROM products
+		ORDER BY name; 
+		
+	e) 
+	You can ORDER BY multiple different properties.
+	SELECT * 
+	FROM products
+	ORDER BY price;  --> How the ordering will be done if some rows are having the same price? By default, it will be done based on the insertion order of records.
+	
+	If we want to, we can not only sort by price, but if two records have the same price, we can then apply a second ordering rule. So, in this example, let's try to sort by price and then if two records have the same price, I want to then order those two records by weight.
+	
+	SELECT * 
+	FROM products
+	ORDER BY price, weight;
+	
+	You can apply sorting order option to each of these cloumns like below.
+	
+	SELECT * 
+	FROM products
+	ORDER BY price ASC, weight DESC;
+	
+3) OFFSET keyword:
+==========================
+	We make use of OFFSET any time we want to skip some number of records in a result-set. 
+		
+		SELECT COUNT(*) FROM users;  --> to get the number of user we have in the users table. Total of 50 users we have.
+		
+		I want to get the details of the last 10 users. 
+		SELECT *
+		FROM users
+		OFFSET 40;   --> Skip the first 40 users from the result-set and show the last 10 user's details 
+		
+4) LIMIT keyword:
+==========================
+	It's going to constrain the number of records we get back from the result of a query. LIMIT is going to make sure that we only take some specific number of records from top out of the result-set. 
+		
+		SELECT *
+		FROM users
+		LIMIT 5;   --> to get the first 5 records from the users table
+		
+	Question:  
+		a) Retrieve the 5 least expensive products
+	
+			SELECT * 
+			FROM products
+			ORDER BY price ASC
+			LIMIT 5;
+			
+		b) Retrieve the least expensive products
+	
+			SELECT * 
+			FROM products
+			ORDER BY price ASC
+			LIMIT 1;
+			
+		c) Retrieve the 5 most expensive products
+	
+			SELECT * 
+			FROM products
+			ORDER BY price DESC
+			LIMIT 5;
+		
+		d) Retrieve the most expensive products
+	
+			SELECT * 
+			FROM products
+			ORDER BY price DESC
+			LIMIT 1;
+
+	You are frequently going to see LIMIT and OFFSET being used together.
+
+		e) Retrieve the 5 most expensive products except the most expensive one 
+	
+			SELECT * 
+			FROM products
+			ORDER BY price DESC
+			LIMIT 5
+			OFFSET 1;
+			
+5) Practical use case of OFFSET and LIMIT keywords together:
+	A very common use of LIMIT and OFFSET together is any time when you are working with large set of records that you want to display to a user on the UI. Our products table is just having 550 different products in it but across the world, there are companies like Amazon who has millions of products. In such cases, it might be just too much information to show to a user on 1 single screen. So, you might want to only show users, say, 20 records/products at a time. To do so, you can apply the OFFSET and LIMIT together. 
+	
+		SELECT * 
+		FROM products
+		ORDER BY price
+		LIMIT 20
+		OFFSET 0;    --> This would give us our 1st page of results to show to a user 
+		
+		SELECT * 
+		FROM products
+		ORDER BY price
+		LIMIT 20
+		OFFSET 20;    --> This would give us our 2nd page of results to show to a user 
+		
+		SELECT * 
+		FROM products
+		ORDER BY price
+		LIMIT 20
+		OFFSET 40;    --> This would give us our 3rd page of results to show to a user 
+		
+		and so on...
+		
+6) Write a query that shows the names of only the second and third most expensive phones.
+
+	For reference, here is the phones table:
+
+	+-------------+--------------+-------+------------+
+	| name        | manufacturer | price | units_sold |
+	+-------------+--------------+-------+------------+
+	| N1280       | Nokia        | 199   | 1925       |
+	+-------------+--------------+-------+------------+
+	| Iphone 4    | Apple        | 399   | 9436       |
+	+-------------+--------------+-------+------------+
+	| Galaxy S    | Samsung      | 299   | 2359       |
+	+-------------+--------------+-------+------------+
+	| S5620 Monte | Samsung      | 250   | 2385       |
+	+-------------+--------------+-------+------------+
+	| N8          | Nokia        | 150   | 7543       |
+	+-------------+--------------+-------+------------+
+	| Droid       | Motorola     | 150   | 8395       |
+	+-------------+--------------+-------+------------+
+	| Wave S8500  | Samsung      | 175   | 9259       |
+	+-------------+--------------+-------+------------+
+		
+		SELECT name 
+		FROM phones
+		ORDER BY price DESC
+		LIMIT 2
+		OFFSET 1;
+		
+7) UNION and INTERSECT keyword in SQL:
+=======================================
+	The UNION operator is used to combine the result-set of two or more SELECT statements. Every SELECT statement within UNION must have the same number of columns. The columns must also have similar data types. The columns in every SELECT statement must also be in the same order
+
+	Question:
+		a) Find the 4 products with the highest price
+			SELECT *
+			FROM products
+			ORDER BY price DESC
+			LIMIT 4;
+			
+		b) Find the 4 products with the highest price/weight ratio. If the price/weight ratio is more then it is a very profitable item/product to ship. Cost efficient product to ship
+			SELECT *
+			FROM products
+			ORDER BY price/weight DESC
+			LIMIT 4;
+			
+		c) Find the 4 products with the highest price and the 4 products with the highest price/weight ratio
+			(
+				SELECT *
+				FROM products
+				ORDER BY price DESC
+				LIMIT 4
+			)
+			UNION
+			(
+				SELECT *
+				FROM products
+				ORDER BY price/weight DESC
+				LIMIT 4
+			);
+			
+	If the UNION keyword sees an identical row in both the result-sets then it's only going to list that row in the output one single time.   
+	If we don't want UNION to remove the duplicate rows then we can change the keyword slightly and use UNION ALL instead. UNION ALL keyword means don't remove the duplicate rows. 
+		
+			(
+				SELECT *
+				FROM products
+				ORDER BY price DESC
+				LIMIT 4
+			)
+			UNION ALL
+			(
+				SELECT *
+				FROM products
+				ORDER BY price/weight DESC
+				LIMIT 4
+			);
+			
+	If you want to see the rows that are common in both the result-sets of the SELECT queries then use the INTERSECT keyword
+			
+			(
+				SELECT *
+				FROM products
+				ORDER BY price DESC
+				LIMIT 4
+			)
+			INTERSECT
+			(
+				SELECT *
+				FROM products
+				ORDER BY price/weight DESC
+				LIMIT 4
+			);
+			
+8) Write a query that will print the manufacturer of phones where the phone's price is less than 170.  Also print all manufacturer that have created more than two phones.
+	For reference, here is the phones table:
+
+	+-------------+--------------+-------+------------+
+	| name        | manufacturer | price | units_sold |
+	+-------------+--------------+-------+------------+
+	| N1280       | Nokia        | 199   | 1925       |
+	+-------------+--------------+-------+------------+
+	| Iphone 4    | Apple        | 399   | 9436       |
+	+-------------+--------------+-------+------------+
+	| Galaxy S    | Samsung      | 299   | 2359       |
+	+-------------+--------------+-------+------------+
+	| S5620 Monte | Samsung      | 250   | 2385       |
+	+-------------+--------------+-------+------------+
+	| N8          | Nokia        | 150   | 7543       |
+	+-------------+--------------+-------+------------+
+	| Droid       | Motorola     | 150   | 8395       |
+	+-------------+--------------+-------+------------+
+	| Wave S8500  | Samsung      | 175   | 9259       |
+	+-------------+--------------+-------+------------+
+	
+		SELECT manufacturer FROM phones WHERE price < 170
+		UNION 
+		SELECT manufacturer FROM phones GROUP BY manufacturer HAVING COUNT(*) > 2;
