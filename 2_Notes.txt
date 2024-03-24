@@ -293,6 +293,7 @@
 	JOIN (SELECT * FROM products) AS p2 ON p1.id = p2.id 
 	WHERE p1.id IN (SELECT id FROM products)
 	
+  Let's see the examples of having a sub-query inside of a SELECT statement 
 	SELECT name, price, (SELECT MAX(price) FROM products)
 	FROM products
 	WHERE price > 867;         --->  This query will give the name of the product, its price and price of the most expensive product
@@ -301,6 +302,7 @@
 	FROM products
 	WHERE price > 867;
 	
+  Let's see the examples of having a sub-query inside of a FROM clause
 	SELECT name, price_weight_ratio
 	FROM (
 		SELECT name, price/weight AS price_weight_ratio
@@ -311,6 +313,22 @@
 	In the below particular example, we are going to see that we don't really have to return a set of rows and columns(table structured data) from a sub-query inside of a FROM clause. We can return just one single value as long as the outer SELECT, WHERE, etc are compatible with it. 
 		SELECT * 
 		FROM (SELECT MAX(price) FROM products) AS p;
+		
+  Let's see the examples of having a sub-query inside of a JOIN clause
+	SELECT first_name
+	FROM users
+	JOIN (
+		SELECT user_id FROM orders
+		WHERE product_id = 3
+	) AS o 
+	ON o.user_id = users.id;     --> getting the firstname of all the users who have ordered product of ID 3
+
+	We could also do something like below but that is more time consuming than the above query:
+	SELECT first_name
+	FROM users
+	JOIN orders
+	ON orders.user_id = users.id
+	WHERE orders.product_id = 3;     --> getting the firstname of all the users who have ordered product of ID 3
 	
 	Question:
 		a) List the name and price of all products that are more expensive than all products in the 'Toys' department
@@ -389,3 +407,189 @@
 					FROM phones 
 					GROUP BY manufacturer
 				) AS p;
+				
+		e) Show the id of orders that involve a product with a price/weight ratio greater than 50
+			
+			SELECT id
+			FROM orders
+			WHERE product_id IN (
+				SELECT id FROM products
+				WHERE price/weight > 50
+			);
+			
+		f) Show the name of all products with a price greater than the average product price 
+			
+			SELECT name
+			FROM products
+			WHERE price > (
+				SELECT AVG(price) FROM products
+			);
+			
+		g) Write a query that prints out the name and price of phones that have a price greater than the Samsung S5620 Monte.
+		   For reference, here is the phones table:
+
+			+-------------+--------------+-------+------------+
+			| name        | manufacturer | price | units_sold |
+			+-------------+--------------+-------+------------+
+			| N1280       | Nokia        | 199   | 1925       |
+			+-------------+--------------+-------+------------+
+			| Iphone 4    | Apple        | 399   | 9436       |
+			+-------------+--------------+-------+------------+
+			| Galaxy S    | Samsung      | 299   | 2359       |
+			+-------------+--------------+-------+------------+
+			| S5620 Monte | Samsung      | 250   | 2385       |
+			+-------------+--------------+-------+------------+
+			| N8          | Nokia        | 150   | 7543       |
+			+-------------+--------------+-------+------------+
+			| Droid       | Motorola     | 150   | 8395       |
+			+-------------+--------------+-------+------------+
+			| Wave S8500  | Samsung      | 175   | 9259       |
+			+-------------+--------------+-------+------------+
+			
+				SELECT name, price 
+				FROM phones 
+				WHERE price > (
+					SELECT price FROM phones WHERE name = 'S5620 Monte'
+				);
+				
+		h) Show the name of all products that are not in the same department as products with a price less than 100
+		
+			SELECT name 
+			FROM products 
+			WHERE department NOT IN (
+				SELECT department FROM products WHERE price < 100
+			);
+			
+		i) Show the name, department, and price of products that are more expensive than all products in the 'Industrial' department
+		
+			SELECT name, department, price
+			FROM products
+			WHERE price > ALL (            ---> '> ALL' makes sure that 'price' column value is greater than all the data/values present inside the following list 
+				SELECT price FROM products WHERE department = 'Industrial'
+			);
+			
+		Notes:
+			For example, '50 > ALL (20, 10)' --> this condition returns true as 50 is greater than all of the values in the right hand side set
+			For example, '50 > ALL (20, 100)' --> this condition returns false as 50 is not greater than all of the values in the right hand side set
+			For example, '50 < ALL (200, 100)' --> this condition returns true as 50 is less than all of the values in the right hand side set
+			For example, '50 < ALL (20, 100)' --> this condition returns false as 50 is not less than all of the values in the right hand side set
+			
+		j) Show the name, department and price of products that are more expensive than at least one product in the 'Industrial' department
+		
+			SELECT name, department, price
+			FROM products
+			WHERE price > SOME (
+				SELECT price
+				FROM products
+				WHERE department = 'Industrial'
+			);
+			
+		Notes: 
+			i) 'SOME' is actually an alias for 'ANY'. So, you can make use of the keyword either 'ANY' OR 'SOME'. They do exactly the same thing. 
+			ii) For example, '50 > SOME (20, 100)' --> this condition returns true as 50 is greater than at aleast one of the values in the right hand side set 
+				For example, '50 > SOME (200, 100)' --> this condition returns false as 50 is not greater than at aleast one of the values in the right hand side set
+				For example, '50 < SOME (20, 100)' --> this condition returns true as 50 is less than at aleast one of the values in the right hand side set
+				For example, '50 < SOME (20, 10)' --> this condition returns false as 50 is not less than at aleast one of the values in the right hand side set
+		
+		k) Write a query that prints the name of all phones that have a price greater than all phones made by Samsung.
+		   For reference, here is the phones table:
+
+			+-------------+--------------+-------+------------+
+			| name        | manufacturer | price | units_sold |
+			+-------------+--------------+-------+------------+
+			| N1280       | Nokia        | 199   | 1925       |
+			+-------------+--------------+-------+------------+
+			| Iphone 4    | Apple        | 399   | 9436       |
+			+-------------+--------------+-------+------------+
+			| Galaxy S    | Samsung      | 299   | 2359       |
+			+-------------+--------------+-------+------------+
+			| S5620 Monte | Samsung      | 250   | 2385       |
+			+-------------+--------------+-------+------------+
+			| N8          | Nokia        | 150   | 7543       |
+			+-------------+--------------+-------+------------+
+			| Droid       | Motorola     | 150   | 8395       |
+			+-------------+--------------+-------+------------+
+			| Wave S8500  | Samsung      | 175   | 9259       |
+			+-------------+--------------+-------+------------+
+			
+				SELECT name
+				FROM phones
+				WHERE price > ALL (
+					SELECT price FROM phones
+					WHERE manufacturer = 'Samsung'
+				);	
+				
+		l) Show the name, department, and price of the most expensive product in each department
+			
+			SELECT name, department, price 
+			FROM products AS p1
+			WHERE p1.price = (
+				SELECT MAX(price)
+				FROM products AS p2
+				WHERE p1.department = p2.department
+			);                                         
+			
+			This(the above one) is called a correlated subquery. The term correlated subquery essentially means that we are referring to some row from the outside query in the inner_query/subquery.
+			
+		m) Without using a join or a group by, print the number of orders for each product
+		
+			SELECT p1.name,
+				 ( 
+				   SELECT COUNT(*)
+				   FROM orders AS o1
+				   WHERE o1.product_id = p1.id
+				 ) AS num_of_orders
+			FROM products AS p1;
+
+			In this case rather than using a correlated subquery in a WHERE clause, we are going to instead place a correlated subquery in the SELECT. We can make use of a correlated subquery not only inside of WHERE clause, we can use them just about anywhere. 
+			When we make use of a correlated subquery, we can imagine that it is like a double nested for loop. So, as the outer query goes through every row of the products table, for every one of these products table rows, we are going to take a look at every single row out of some other source of data(in this case, it's going to be orders table). 
+			
+		n) A SELECT without a FROM
+		
+			If we place just a subquery inside of a SELECT, we can get away/going without putting in a FROM or JOIN or anything else like that as long as the subquery returns one single value. 
+			
+				SELECT (
+					SELECT MAX(price)
+					FROM products
+				);
+				
+			Why we would ever do this? 
+			This is actually really useful if we are ever trying to calculate just one single value that is the result of several other values. For example, let's say, we want to find the ratio of maximum priced item to the lowest priced item. 
+			
+				SELECT (
+					SELECT MAX(price)
+					FROM products
+				) / (
+					SELECT MIN(price)
+					FROM products
+				);
+				
+			Other way of writing the above query is shown below:
+				SELECT (SELECT MAX(price) FROM products;) / (SELECT MIN(price) FROM products);
+				
+				SELECT (SELECT MAX(price) FROM products;) / (SELECT AVG(price) FROM products);  --> ratio of max. priced item to the average price of each items
+				
+			We can also print out multiple values from different subqueries. Let's say we want to print out both the max. priced item and average price of each items. 
+			
+				SELECT (SELECT MAX(price) FROM products;), (SELECT AVG(price) FROM products);
+			
+		o) Print out the number of distinct/unique departments we have in the products table
+			
+			SELECT COUNT(DISTINCT department)
+			FROM products;
+			
+			We can only do a COUNT when we are finding DISTINCT over one single column because COUNT function takes a single cloumn. 
+			
+		p) If you ever want to select the unique values across multiple columns then we could do
+			
+			SELECT DISTINCT department, name
+			FROM products;       --> this will give us a list of all the unique combinations of these two columns 
+			
+			If we do a DISTINCT over two or more columns then we can no longer do a count to it. 
+				
+				SELECT COUNT(DISTINCT department, name)
+				FROM products;         --> You will get an error. You can't wrap DISTINCT with multiple columns with a COUNT aggregate function
+				
+			
+			
+			
