@@ -1,0 +1,154 @@
+1) The following queries are going to use a new dataset that simulates an E-Commerce application!
+
+	CREATE TABLE users (
+	  id SERIAL PRIMARY KEY,
+	  first_name VARCHAR,
+	  last_name VARCHAR
+	);
+	CREATE TABLE products (
+	  id SERIAL PRIMARY KEY,
+	  name VARCHAR,
+	  department VARCHAR,
+	  price INTEGER,
+	  weight INTEGER
+	);
+	CREATE TABLE orders (
+	  id SERIAL PRIMARY KEY,
+	  user_id INTEGER REFERENCES users(id),
+	  product_id INTEGER REFERENCES products(id),
+	  paid BOOLEAN
+	);
+
+2) Builtin GREATEST function in PostgreSQL:
+=================================================
+	It allows us to select a greatest value around a list of values
+		
+		SELECT GREATEST(20, 10, 30);
+			Output:  30
+			
+	a) Compute the cost to ship each item in the products table. Shipping cost is the maximum of (weight * $2) or $30
+	
+		SELECT name, weight GREATEST(30, 2 * weight)
+		FROM products;
+		
+		In the above query, we are going to take all the different rows from products table and then we are going to run this SELECT clause on every single row. 
+
+3) Builtin LEAST function in PostgreSQL:
+===============================================
+	It allows us to select a least value around a list of values
+		
+		SELECT LEAST(20, 10, 30);
+			Output:  10
+	
+	a) Let's say all of our products are on sale and the rule to calculate the sale price of a product is the least of the product's price * 0.5 or $400 
+	
+		SELECT name, price LEAST(price * 0.5, 400)
+		FROM products;
+		
+4) CASE statement:
+=======================
+	It's more like switch statement.
+	
+	a) Print each product and its price. Also print a description of the price. Description should be decided based on the below conditions
+	   If price > 600 then 'high'
+	   If price > 300 then 'medium'
+	   else print 'cheap'
+	   
+		SELECT 
+			name, 
+			price,
+			CASE
+				WHEN price > 600 THEN 'high'
+				WHEN price > 300 THEN 'medium'
+				ELSE 'cheap'
+			END
+		FROM products;
+		
+5) How to check if a column value is equal to NULL?
+
+	Update products
+	SET price = 9999
+	WHERE price IS NULL;
+	
+	Update products
+	SET price = 9999
+	WHERE price = NULL;    --> this is wrong. we can't check a column value is equal to NULL or not like this 
+	
+6) Query to remove any constraint from the table
+	
+	ALTER TABLE products
+	DROP CONSTRAINT <constraint_name>
+	
+7) Below is the phones table!
+
+	+-------------+--------------+-------+------------+
+	| name        | manufacturer | price | units_sold |
+	+-------------+--------------+-------+------------+
+	| N1280       | Nokia        | 199   | 1925       |
+	+-------------+--------------+-------+------------+
+	| Iphone 4    | Apple        | 399   | 9436       |
+	+-------------+--------------+-------+------------+
+	| Galaxy S    | Samsung      | 299   | 2359       |
+	+-------------+--------------+-------+------------+
+	
+	If we applied a uniqueness constraint to price, what would happen when we ran the following?
+
+	INSERT INTO phones (name, manufacturer, price, units_sold)
+	VALUES ('Droid', 'Motorola', 299.01::INTEGER, 5239);
+	
+		Answer: It would fail because the value 299.01 would be converted into 299 and there is already a row with a price of 299
+		
+8) TIMESTAMP in PostgreSQL:
+===============================
+	CREATE TABLE orders (
+	id SERIAL PRIMARY KEY,
+	name VARCHAR(40) NOT NULL,
+	created_at TIMESTAMP NOT NULL,
+	est_delivery TIMESTAMP NOT NULL,
+	CHECK (created_at < est_delivery)
+	);
+
+	INSERT INTO orders (name, created_at, est_delivery)
+	VALUES ('Shirt', '2000-NOV-20 01:00AM', '2000-NOV-25 01:00AM');
+	
+	OR 
+	
+	INSERT INTO orders (name, created_at, est_delivery)
+	VALUES ('Shirt', '2000-NOV-20 01:00AM'::TIMESTAMP, '2000-NOV-25 01:00AM'::TIMESTAMP);
+	
+9) You create a table called cars with the following statement:
+
+	CREATE TABLE cars (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(20),
+		color VARCHAR(20) CHECK (color IN ('red', 'green', 'blue'))
+	);
+	
+	Would the following statement succeed or fail?
+
+	INSERT INTO cars (name, color)
+	VALUES ('Mustang', 'Cherry Red');
+	
+		Answer: It would fail because the color Cherry Red does not pass the check statement
+		
+10) Should we keep our validations on Web Server or Database
+
+	We've been talking about adding validation at the database level, but we can also add validation into our web server. So if you're writing a web server using Node or Java, Python, whatever it is, there are libraries out there that can handle validation for you.
+
+	So the real question here is where should we focus on adding validation? Should we continue to add a lot of validation at the Web server level or inside of our database?
+
+	Well, the real answer here is that we should spread validation across both these things.
+
+	Let's take a look at a quick table(see the image '20_where_should_we_be_applying_validation_2' under 'PostgreSQL_developer_guide/Database_side_validation_and_Constraints') that's going to summarize some of the benefits of adding validation in both locations.
+
+	So inside of our web server, it's generally a lot easier to add in more complex styles of validation. For example, let's imagine that we're building some kind of stock buying application where we want to take a look at the value of some company and then maybe add a record into our database saying whether or not we want to buy stock in that company. To take a look at the value of another company. We might have to make some kind of network request to an outside API. That is something that we by definition really have to do at the web server level. Postgres technically can make network requests but generally don't want to do it. So if we ever want to try to access some outside information to complete our validation, well, we're probably doing that at the web server level. In general, it's also a lot easier to apply new validation rules at the Web Server level.
+
+	So let's say that we just today decided that the price of all products has to be greater than maybe $10. In order to apply some new validation like that, all we would have to do is make a change to our web server code, commit it to git, do a new deploy, and that's it. Our new validation is now live. Adding new validation rules to our database tends to be a little bit more tricky. We haven't really discussed a lot about how to make changes to a database that is running in production, but for right now, just trust me when I say we tend to be a lot more patient and a little bit more careful when making changes to a database, specifically rules around our database. So adding in some very small validation rule to a web server tends to be a little bit easier than adding it to the database. Finally, Web servers or specifically a lot of different programming languages like, say, JavaScript, Java, Python, whatever else, very frequently have libraries that will automatically do a lot of validation for you. So, for example, they might check to make sure a string looks like an email address, might check to make sure a phone number looks like a phone number, maybe has the right number of digits and so on. So there are libraries out there to handle that validation stuff for you. A lot of similar validation stuff you would have to put together from scratch inside of Postgres. So for a lot of the validation, well, at some level it starts to be a little bit easier on the web server.
+
+	However, there's definitely benefits to adding validation to your database as well. Most notably, you can take your database, you can connect to it from some other client. So for example, from Pgadmin or from your web server or from whatever other resource, and you can start adding data into your database. And any data that you add in from any source is always going to have validation applied to it, which is really fantastic. It means that someone cannot connect directly to our database and start to add in a product with a negative price. 
+	
+	Next up in very similarly related, we are guaranteed that validation is always going to be applied when we put it at the database level. So again, no matter where our data is coming from, whenever we are inserting data into a table or updating data inside of a table, we're guaranteed that it's going to be validated. But whenever we tried to apply a new validation rule in all the constraints we were just talking about, we saw that we always had to make sure that the existing data inside the table matched or satisfied that validation rule we were trying to add. So in other words, we cannot apply that not null constraint to a column that already had null values inside of it. Now that's actually kind of a good thing. It means that we, whenever we apply some validation rule, we are guaranteed that all of our data passes that validation and there is no existing data inside of our database that doesn't satisfy it. If we add some new validation rule into our web server, it's entirely possible that there might be some records inside of our database that don't satisfy that new validation. And so we might have some data that is technically half valid and half invalid if we just add validation rules into our web server alone. So at the end of the day, we are best served by kind of spreading our validation around between a web server and the database. Applying some validation at both.
+
+	Personally, I try to put the bulk of my validation at the web server level and only put some very critical stuff, very critical validation at the database level. So an example of that would be if I'm adding or allowing a user to sign up for my application, I want to make sure that they've got a username that is some number of characters long.
+
+	I would put a check for that at the web server level because honestly, if I had some user sign up with a username that was only say two characters long instead of my required four, nothing's really breaking per se. However, I would want to put in very critical validation rules, For example, if I wanted to make sure that all the products were added had a price greater than zero. That's super critical. I always want to make sure that my prices are greater than zero. So that is an example of a rule that I would definitely put at my database level to make sure that all my products always have a price greater than zero 100% of the time.
